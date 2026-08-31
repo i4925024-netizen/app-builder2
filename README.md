@@ -1,17 +1,19 @@
-# HTML APK Studio — Complete Starter
+# HTML APK Studio — All In One
 
-Upload the contents of this ZIP to the repository root.
+This is a real Android project with a working local project manager/editor/preview/export system.
 
-Included:
-- Native Android WebView shell
-- Projects
-- HTML/CSS/JavaScript editor
-- Save/load in local storage
+Features:
+- Projects: new, open, rename, delete, duplicate
+- Persistent local storage
+- HTML/CSS/JS editor
+- Add/rename/delete files
+- Find/replace
+- Auto-save
 - Live preview
-- Rename/delete/new project
-- Import HTML/CSS/JS/text
-- Export project ZIP
 - App name/package/version settings
+- Export a complete Android project ZIP
 - GitHub Actions debug APK workflow
+- GitHub Actions release APK/AAB workflow
+- Optional one-time GitHub connection from the app to upload the project and start a workflow
 
-The app does not falsely claim that a WebView can compile Android APKs. A real remote APK/AAB build service must be connected for one-tap online compilation.
+The app does not pretend that a WebView is an Android compiler. APK/AAB compilation is performed by Gradle on the GitHub runner.
