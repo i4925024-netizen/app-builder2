@@ -18,117 +18,100 @@ import java.util.zip.ZipOutputStream
 
 class MainActivity : AppCompatActivity() {
     private lateinit var web: WebView
-    private val prefs by lazy { getSharedPreferences("studio", MODE_PRIVATE) }
     private var pendingZip: File? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         web = WebView(this)
         setContentView(web)
+
         web.settings.javaScriptEnabled = true
         web.settings.domStorageEnabled = true
         web.settings.allowFileAccess = true
         web.settings.allowContentAccess = true
+        web.settings.javaScriptCanOpenWindowsAutomatically = true
         web.webViewClient = WebViewClient()
         web.webChromeClient = WebChromeClient()
         web.addJavascriptInterface(Bridge(), "Android")
         web.loadUrl("file:///android_asset/index.html")
     }
 
-    private fun showMessage(message: String) {
-        runOnUiThread {
-            Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
-        }
+    private fun toast(s: String) {
+        runOnUiThread { Toast.makeText(this, s, Toast.LENGTH_SHORT).show() }
     }
 
     inner class Bridge {
-        @JavascriptInterface
-        fun showMessage(message: String) = this@MainActivity.showMessage(message)
+        @JavascriptInterface fun showMessage(s: String) = toast(s)
 
-        @JavascriptInterface
-        fun getBuildUrl(): String = prefs.getString("build_url", "") ?: ""
-
-        @JavascriptInterface
-        fun setBuildUrl(url: String) {
-            prefs.edit().putString("build_url", url.trim()).apply()
-            this@MainActivity.showMessage("Build provider saved")
-        }
-
-        @JavascriptInterface
-        fun exportProject(projectJson: String) {
+        @JavascriptInterface fun exportProject(json: String) {
             try {
-                val tmp = File(cacheDir, "html-apk-studio-project.zip")
-                createZip(projectJson, tmp)
-                pendingZip = tmp
+                val f = File(cacheDir, "html-apk-studio-project.zip")
+                zipProject(json, f)
+                pendingZip = f
                 startActivityForResult(Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
                     type = "application/zip"
                     putExtra(Intent.EXTRA_TITLE, "html-apk-project.zip")
-                }, 1001)
-            } catch (e: Exception) {
-                this@MainActivity.showMessage("Export failed: ${e.message}")
-            }
+                }, 10)
+            } catch (e: Exception) { toast("Export failed: ${e.message}") }
         }
 
-        @JavascriptInterface
-        fun importTextFile() {
+        @JavascriptInterface fun importFile() {
             startActivityForResult(Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
-                type = "text/*"
+                type = "*/*"
                 addCategory(Intent.CATEGORY_OPENABLE)
-            }, 1002)
+            }, 11)
         }
 
-        @JavascriptInterface
-        fun requestBuild(projectJson: String, mode: String) {
-            val url = getBuildUrl()
-            if (url.isBlank()) {
-                this@MainActivity.showMessage(
-                    "Build provider is not configured. Configure a real HTTPS provider first."
-                )
-                return
-            }
-            this@MainActivity.showMessage("Build request prepared: $mode")
+        @JavascriptInterface fun requestBuild(json: String, mode: String) {
+            toast("Project is ready for $mode build. Use Export ZIP for an external build service.")
         }
     }
 
-    private fun createZip(json: String, out: File) {
+    private fun zipProject(json: String, out: File) {
         val root = JSONObject(json)
         val files = root.optJSONObject("files") ?: JSONObject()
-        ZipOutputStream(FileOutputStream(out)).use { zip ->
-            val keys = files.keys()
-            while (keys.hasNext()) {
-                val name = keys.next()
-                zip.putNextEntry(ZipEntry(name))
-                zip.write(files.getString(name).toByteArray(Charsets.UTF_8))
-                zip.closeEntry()
+        ZipOutputStream(FileOutputStream(out)).use { z ->
+            val it = files.keys()
+            while (it.hasNext()) {
+                val name = it.next()
+                z.putNextEntry(ZipEntry(name))
+                z.write(files.getString(name).toByteArray(Charsets.UTF_8))
+                z.closeEntry()
             }
-            zip.putNextEntry(ZipEntry("studio-project.json"))
-            zip.write((root.optJSONObject("meta")?.toString(2) ?: "{}").toByteArray())
-            zip.closeEntry()
+            z.putNextEntry(ZipEntry("studio-project.json"))
+            z.write((root.optJSONObject("meta")?.toString(2) ?: "{}").toByteArray())
+            z.closeEntry()
         }
     }
 
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        if (resultCode != Activity.RESULT_OK || data?.data == null) return
-        val uri: Uri = data.data!!
+    override fun onActivityResult(req: Int, result: Int, data: Intent?) {
+        super.onActivityResult(req, result, data)
+        if (result != Activity.RESULT_OK || data?.data == null) return
+        val uri = data.data!!
         try {
-            if (requestCode == 1001) {
-                val tmp = pendingZip ?: return
-                contentResolver.openOutputStream(uri)?.use { output ->
-                    tmp.inputStream().use { input -> input.copyTo(output) }
+            if (req == 10) {
+                pendingZip?.inputStream()?.use { input ->
+                    contentResolver.openOutputStream(uri)?.use { output -> input.copyTo(output) }
                 }
-                showMessage("Project exported successfully")
-            } else if (requestCode == 1002) {
+                toast("Project ZIP exported")
+            } else if (req == 11) {
+                val name = queryName(uri)
                 val text = contentResolver.openInputStream(uri)?.bufferedReader()?.use { it.readText() } ?: ""
-                web.evaluateJavascript("window.nativeImportedText(${JSONObject.quote(text)})", null)
-                showMessage("File imported successfully")
+                web.evaluateJavascript(
+                    "window.nativeImportedFile(${JSONObject.quote(name)},${JSONObject.quote(text)})",
+                    null
+                )
             }
-        } catch (e: Exception) {
-            showMessage("Operation failed: ${e.message}")
-        }
+        } catch (e: Exception) { toast("File operation failed: ${e.message}") }
     }
 
-    @Deprecated("Deprecated in Android API")
+    private fun queryName(uri: Uri): String {
+        return contentResolver.query(uri, arrayOf("_display_name"), null, null, null)?.use { c ->
+            if (c.moveToFirst()) c.getString(0) else "imported.txt"
+        } ?: "imported.txt"
+    }
+
+    @Deprecated("Deprecated Android API")
     override fun onBackPressed() {
         if (web.canGoBack()) web.goBack() else super.onBackPressed()
     }
