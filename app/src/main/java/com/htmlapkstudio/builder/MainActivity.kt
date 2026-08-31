@@ -60,7 +60,7 @@ class MainActivity : AppCompatActivity() {
 
         @JavascriptInterface fun importText() {
             startActivityForResult(Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
-                type = "text/*"
+                type = "*/*"
                 addCategory(Intent.CATEGORY_OPENABLE)
             }, 101)
         }
@@ -228,7 +228,7 @@ class MainActivity:AppCompatActivity(){
                 val name = contentResolver.query(data.data!!, arrayOf("_display_name"), null, null, null)?.use {
                     if (it.moveToFirst()) it.getString(0) else "imported.txt"
                 } ?: "imported.txt"
-                web.evaluateJavascript("window.nativeImport(${JSONObject.quote(name)},${JSONObject.quote(text)})", null)
+                web.evaluateJavascript("if(window.nativeImport){window.nativeImport(${JSONObject.quote(name)},${JSONObject.quote(text)})}", null)
             }
         } catch (e: Exception) { say("File error: ${e.message}") }
     }
