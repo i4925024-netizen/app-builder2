@@ -1,18 +1,14 @@
-# Build Provider specification
+# Build Provider API
 
-The app must not depend on GitHub.
+The Android app is intentionally not tied to GitHub. Configure any HTTPS service that implements this contract.
 
-Recommended production flow:
-1. App packages the current web project (HTML/CSS/JS/assets + app metadata).
-2. App sends the project ZIP to a user-controlled HTTPS build server.
-3. Server runs Gradle/Android SDK in an isolated worker.
-4. Server returns a job ID.
-5. App polls job status and downloads APK/AAB.
-6. GitHub Actions remains an optional fallback provider.
+POST /v1/build
+- Content-Type: multipart/form-data
+- field `project`: ZIP containing HTML/CSS/JS and `studio-project.json`
+- optional `target`: debug or release
+- response: `{ "jobId": "..." }`
 
-Required server endpoints:
-POST /v1/build -> {jobId}
-GET /v1/build/{jobId} -> {status, progress, message, apkUrl?, aabUrl?}
-POST /v1/validate -> validation report
+GET /v1/build/{jobId}
+- response: `{ "status":"queued|building|success|failed", "progress":0, "message":"...", "apkUrl":"...", "aabUrl":"..." }`
 
-This separates the Android app from the build infrastructure and allows the service to be replaced later.
+A production provider should run Android SDK + JDK + Gradle in an isolated worker and sign release artifacts with a private keystore. Never put signing credentials inside the mobile app or public repository.

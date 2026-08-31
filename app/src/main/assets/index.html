@@ -1,14 +1,61 @@
 <!doctype html>
-<html><head><meta name="viewport" content="width=device-width,initial-scale=1">
-<style>body{font-family:sans-serif;margin:0;background:#f5f7fb;color:#172033}header{padding:16px;background:#172033;color:white}button{padding:10px;margin:4px;border:0;border-radius:8px}textarea{width:100%;height:42vh;box-sizing:border-box;font:14px monospace;padding:12px}iframe{width:100%;height:35vh;border:1px solid #ccd3df;background:white}.row{padding:8px}</style></head>
-<body><header><b>HTML APK Studio</b><div>Project Editor • Preview • Build Provider</div></header>
-<div class="row"><button onclick="preview()">Preview</button><button onclick="save()">Save</button><button onclick="build()">Build APK</button><button onclick="nativeMsg()">Native Test</button></div>
-<textarea id="code"><!doctype html><html><body><h1>Hello from my app</h1><p>Edit this HTML and press Preview.</p></body></html></textarea>
-<iframe id="preview"></iframe>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<meta name="theme-color" content="#101828">
+<title>HTML APK Studio</title>
+<style>
+:root{--bg:#f4f6fa;--card:#fff;--ink:#182230;--muted:#667085;--line:#d8dee8;--accent:#5b4bdb;--dark:#101828}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:Arial,sans-serif}
+header{background:var(--dark);color:white;padding:16px 18px;position:sticky;top:0;z-index:4}header h1{font-size:23px;margin:0 0 4px}header p{margin:0;color:#cbd5e1;font-size:13px}
+nav{display:flex;gap:6px;padding:8px;background:#fff;border-bottom:1px solid var(--line);position:sticky;top:73px;z-index:3;overflow:auto}button,.btn{border:0;border-radius:9px;padding:10px 13px;font-size:14px;background:#e9ecf2;color:var(--ink);white-space:nowrap}button.primary{background:var(--accent);color:white}button.danger{background:#fee4e2;color:#b42318}
+main{padding:12px;max-width:900px;margin:auto}.screen{display:none}.screen.active{display:block}.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:13px;margin-bottom:12px;box-shadow:0 2px 10px #1018280b}
+label{font-size:12px;color:var(--muted);display:block;margin:9px 0 4px}input,select{width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;background:white;color:var(--ink)}
+.editorTabs{display:flex;gap:5px;margin-bottom:7px}.editorTabs button.active{background:var(--dark);color:#fff}.editor{width:100%;height:44vh;resize:vertical;border:1px solid var(--line);border-radius:9px;padding:12px;font:13px/1.5 Consolas,monospace;background:#0b1220;color:#e5e7eb;tab-size:2}
+iframe{width:100%;height:43vh;border:1px solid var(--line);border-radius:9px;background:#fff}.project{display:flex;align-items:center;justify-content:space-between;padding:12px;border:1px solid var(--line);border-radius:10px;margin:7px 0;background:#fff}.project small{color:var(--muted);display:block;margin-top:3px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.hint{font-size:12px;color:var(--muted);line-height:1.45}.status{padding:10px;border-radius:9px;background:#eef4ff;color:#194185;font-size:13px;margin-top:8px}
+@media(max-width:620px){.grid{grid-template-columns:1fr}nav{top:72px}}
+</style>
+</head>
+<body>
+<header><h1>HTML APK Studio</h1><p>Projects • Editor • Preview • App Settings • Build</p></header>
+<nav>
+<button onclick="show('projects')">Projects</button><button onclick="show('editor')">Editor</button><button onclick="show('preview')">Preview</button><button onclick="show('settings')">Settings</button><button class="primary" onclick="build()">Build APK</button>
+</nav>
+<main>
+<section id="projects" class="screen active">
+<div class="card"><h2>Projects</h2><button class="primary" onclick="newProject()">+ New Project</button> <button onclick="importText()">Import Text</button> <button onclick="exportProject()">Export ZIP</button><div id="projectList"></div></div>
+</section>
+<section id="editor" class="screen">
+<div class="card"><div class="editorTabs"><button data-file="index.html" onclick="fileTab('index.html')">HTML</button><button data-file="style.css" onclick="fileTab('style.css')">CSS</button><button data-file="script.js" onclick="fileTab('script.js')">JS</button></div><textarea id="editor" class="editor" spellcheck="false" oninput="dirty=true"></textarea><div style="margin-top:8px"><button class="primary" onclick="saveProject()">Save</button><button onclick="preview()">Preview</button><button onclick="exportProject()">Export Project</button></div></div>
+</section>
+<section id="preview" class="screen"><div class="card"><h2>Live Preview</h2><iframe id="frame"></iframe><button class="primary" onclick="preview()">Refresh Preview</button></div></section>
+<section id="settings" class="screen">
+<div class="card"><h2>App Settings</h2><div class="grid"><div><label>App name</label><input id="appName"></div><div><label>Package name</label><input id="packageName" placeholder="com.example.myapp"></div><div><label>Version name</label><input id="versionName" value="1.0.0"></div><div><label>Version code</label><input id="versionCode" value="1"></div></div><label>Build Provider HTTPS URL (optional)</label><input id="buildUrl" placeholder="https://your-build-server.example/v1/build"><p class="hint">GitHub is not required by the app architecture. A build provider can be your own server or another compatible service.</p><button class="primary" onclick="saveSettings()">Save Settings</button><div id="status" class="status">Build mode: provider not configured</div></div>
+<div class="card"><h3>Build targets</h3><p class="hint">Debug APK is for testing. Production publishing needs a signed release APK/AAB. Signing credentials must never be placed in HTML or public source files.</p><button onclick="build('debug')">Build Debug APK</button><button class="primary" onclick="build('release')">Build Release</button></div>
+</section>
+</main>
 <script>
-function preview(){document.getElementById('preview').srcdoc=document.getElementById('code').value}
-function save(){localStorage.setItem('project-index',document.getElementById('code').value); if(window.Android) Android.showMessage('Project saved')}
-function build(){if(window.Android) Android.requestBuild(document.getElementById('code').value); else alert('Configure a build provider in the native app')}
-function nativeMsg(){if(window.Android) Android.showMessage('Native bridge is working')}
-let old=localStorage.getItem('project-index'); if(old) code.value=old; preview();
-</script></body></html>
+const KEY='html-apk-studio-v3';let state=JSON.parse(localStorage.getItem(KEY)||'null');let current='index.html',dirty=false;
+const starter={
+ 'index.html':'<!doctype html>\n<html>\n<head>\n<meta name="viewport" content="width=device-width,initial-scale=1">\n<link rel="stylesheet" href="style.css">\n</head>\n<body>\n<div class="app"><h1>My App</h1><p>Edit HTML, CSS and JavaScript in the Studio.</p><button onclick="hello()">Test Button</button></div>\n<script src="script.js"><\/script>\n</body>\n</html>',
+ 'style.css':'body{font-family:Arial;margin:0;background:#f4f6fa}.app{margin:30px auto;max-width:500px;background:white;padding:24px;border-radius:16px;text-align:center}button{padding:12px 18px;border:0;border-radius:9px;background:#5b4bdb;color:white}',
+ 'script.js':'function hello(){alert("JavaScript is working!")}'
+};
+function init(){if(!state)state={name:'My App',package:'com.example.myapp',version:'1.0.0',code:1,files:{...starter}};document.getElementById('appName').value=state.name;document.getElementById('packageName').value=state.package;document.getElementById('versionName').value=state.version;document.getElementById('versionCode').value=state.code;document.getElementById('buildUrl').value=Android&&Android.getBuildUrl?Android.getBuildUrl():'';renderProjects();fileTab('index.html');preview();}
+function persist(){localStorage.setItem(KEY,JSON.stringify(state));dirty=false;}
+function saveProject(){state.name=document.getElementById('appName').value||'My App';state.package=document.getElementById('packageName').value||'com.example.myapp';state.version=document.getElementById('versionName').value||'1.0.0';state.code=parseInt(document.getElementById('versionCode').value||'1');state.files[current]=document.getElementById('editor').value;persist();renderProjects();msg('Project saved');}
+function fileTab(f){if(dirty)state.files[current]=document.getElementById('editor').value;current=f;document.getElementById('editor').value=state.files[f]||'';document.querySelectorAll('.editorTabs button').forEach(b=>b.classList.toggle('active',b.dataset.file===f));dirty=false;show('editor');}
+function show(id){document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));document.getElementById(id).classList.add('active');if(id==='preview')preview();}
+function preview(){if(dirty)state.files[current]=document.getElementById('editor').value;let html=state.files['index.html'];html=html.replace(/<link[^>]+href=["']style\.css["'][^>]*>/i,'<style>'+state.files['style.css']+'</style>');html=html.replace(/<script[^>]+src=["']script\.js["'][^>]*><\\/script>/i,'<script>'+state.files['script.js']+'<\\/script>');document.getElementById('frame').srcdoc=html;show('preview');}
+function newProject(){state={name:'New App',package:'com.example.newapp',version:'1.0.0',code:1,files:{...starter}};persist();document.getElementById('appName').value=state.name;document.getElementById('packageName').value=state.package;renderProjects();fileTab('index.html');msg('New project created');}
+function renderProjects(){document.getElementById('projectList').innerHTML='<div class="project"><div><b>'+esc(state.name)+'</b><small>'+esc(state.package)+' • v'+esc(state.version)+'</small></div><button onclick="show(\'editor\')">Open</button></div>';}
+function saveSettings(){saveProject();let u=document.getElementById('buildUrl').value.trim();if(Android&&Android.setBuildUrl)Android.setBuildUrl(u);document.getElementById('status').textContent=u?'Build mode: configured provider':'Build mode: provider not configured';}
+function build(mode){saveProject();let payload={meta:{name:state.name,package:state.package,version:state.version,versionCode:state.code,target:mode||'debug'},files:state.files};if(Android&&Android.requestBuild)Android.requestBuild(JSON.stringify(payload));else msg('Build bridge unavailable');}
+function exportProject(){saveProject();Android.exportProject(JSON.stringify({meta:{name:state.name,package:state.package,version:state.version},files:state.files}));}
+function importText(){Android.importTextFile();}
+function nativeImportedText(text){state.files[current]=text;document.getElementById('editor').value=text;dirty=true;show('editor');msg('Text imported into '+current);}
+function msg(x){if(Android&&Android.showMessage)Android.showMessage(x);}
+function esc(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
+init();
+</script>
+</body></html>
