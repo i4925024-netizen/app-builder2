@@ -1,92 +1,96 @@
 <!doctype html>
-<html><head>
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<html>
+<head>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
 <title>HTML to APK Builder 2.0</title>
 <style>
 *{box-sizing:border-box}body{margin:0;font-family:Arial;background:#f3f5f9;color:#17212f}
-header{background:#101828;color:#fff;padding:17px}h1{margin:0;font-size:24px}header p{margin:5px 0;color:#cbd5e1}
-nav{display:flex;gap:6px;padding:8px;background:#fff;border-bottom:1px solid #d9dee8;overflow:auto;position:sticky;top:0;z-index:5}
-button{border:0;border-radius:9px;padding:10px 13px;background:#e7eaf0;font-size:14px}
-.primary{background:#5b4bdb;color:#fff}.danger{background:#fee4e2;color:#b42318}
-main{max-width:1050px;margin:auto;padding:12px}.screen{display:none}.screen.active{display:block}
+header{background:#101828;color:#fff;padding:16px}header h1{margin:0;font-size:23px}header p{margin:4px 0;color:#cbd5e1}
+nav{display:flex;gap:6px;overflow:auto;background:#fff;padding:8px;border-bottom:1px solid #d9dee8;position:sticky;top:0;z-index:5}
+button{border:0;border-radius:9px;padding:10px 12px;background:#e7eaf0;color:#17212f}button.primary{background:#5b4bdb;color:#fff}button.danger{background:#fee4e2;color:#b42318}
+main{max-width:1050px;margin:auto;padding:12px}.screen{display:none}.active{display:block}
 .card{background:#fff;border:1px solid #d9dee8;border-radius:14px;padding:14px;margin-bottom:12px}
 .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.row{display:flex;gap:7px;flex-wrap:wrap}
-label{font-size:12px;color:#667085;display:block;margin:5px 0}
-input,select{width:100%;padding:10px;border:1px solid #ccd2dc;border-radius:8px}
-textarea{width:100%;height:50vh;background:#0b1220;color:#e5e7eb;border-radius:9px;padding:12px;font:13px/1.5 Consolas}
-iframe{width:100%;height:50vh;border:1px solid #d9dee8;border-radius:9px}
-.file{padding:10px;border:1px solid #d9dee8;border-radius:9px;margin-top:7px}.small{font-size:12px;color:#667085}
-.status{padding:10px;background:#eef4ff;color:#194185;border-radius:9px;margin-top:10px}
+label{display:block;font-size:12px;color:#667085;margin:5px 0}input,select{width:100%;padding:10px;border:1px solid #ccd2dc;border-radius:8px}
+textarea{width:100%;height:48vh;background:#0b1220;color:#e5e7eb;border:1px solid #2d3748;border-radius:9px;padding:12px;font:13px/1.5 Consolas,monospace}
+iframe{width:100%;height:48vh;border:1px solid #d9dee8;border-radius:9px;background:#fff}.files{display:flex;gap:6px;overflow:auto;margin:8px 0}
+.files button.active{background:#101828;color:#fff}.status{padding:10px;border-radius:9px;background:#eef4ff;color:#194185;margin-top:9px}.small{font-size:12px;color:#667085;line-height:1.5}
+.project{padding:12px;border:1px solid #d9dee8;border-radius:10px}.title{font-weight:bold;font-size:17px}
 @media(max-width:650px){.grid{grid-template-columns:1fr}}
-</style></head>
+</style>
+</head>
 <body>
 <header><h1>HTML to APK Builder 2.0</h1><p>Direct HTML → APK • No GitHub required</p></header>
 <nav>
-<button onclick="page('project')">Project</button>
+<button onclick="page('home')">Project</button>
 <button onclick="page('editor')">Editor</button>
 <button onclick="page('preview')">Preview</button>
 <button onclick="page('settings')">APK Settings</button>
 <button class="primary" onclick="build()">Build APK</button>
 </nav>
 <main>
-<section id="project" class="screen active"><div class="card"><h2>Project</h2>
-<div class="row">
-<button class="primary" onclick="newProject()">+ New Project</button>
-<button onclick="nativePick()">Import HTML</button>
-<button onclick="nativeZip()">Import Web ZIP</button>
-<button onclick="saveProject()">Save</button>
-</div><div id="projectInfo"></div></div></section>
+<section id="home" class="screen active"><div class="card"><h2>Project</h2>
+<div class="row"><button class="primary" onclick="newProject()">New Project</button><button onclick="importHtml()">Import HTML</button><button onclick="importFile()">Import File</button><button onclick="save()">Save</button></div>
+<div id="projectBox"></div></div></section>
 
-<section id="editor" class="screen"><div class="card"><h2>Web Files</h2>
+<section id="editor" class="screen"><div class="card"><h2>Editor</h2>
 <div class="row"><button onclick="addFile()">Add File</button><button onclick="renameFile()">Rename</button><button class="danger" onclick="deleteFile()">Delete</button></div>
-<div id="fileList"></div><textarea id="code"></textarea><div class="small">Changes are saved automatically.</div></div></section>
+<div id="files" class="files"></div><textarea id="code"></textarea><div class="small">Auto-save enabled.</div></div></section>
 
-<section id="preview" class="screen"><div class="card"><h2>Preview</h2><button onclick="preview()">Refresh</button><iframe id="previewFrame"></iframe></div></section>
+<section id="preview" class="screen"><div class="card"><h2>Preview</h2><button onclick="preview()">Refresh Preview</button><iframe id="frame"></iframe></div></section>
 
-<section id="settings" class="screen"><div class="card"><h2>APK Settings</h2>
+<section id="settings" class="screen">
+<div class="card"><h2>APK Settings</h2>
 <div class="grid">
-<div><label>App name</label><input id="appName"></div>
-<div><label>Package name</label><input id="packageName"></div>
+<div><label>App Name</label><input id="appName"></div>
+<div><label>Package Name</label><input id="pkg"></div>
 <div><label>Version</label><input id="version"></div>
-<div><label>Version code</label><input id="versionCode" type="number"></div>
+<div><label>Version Code</label><input id="versionCode" type="number"></div>
 <div><label>Orientation</label><select id="orientation"><option value="unspecified">Auto</option><option value="portrait">Portrait</option><option value="landscape">Landscape</option></select></div>
 <div><label>JavaScript</label><select id="js"><option value="1">Enabled</option><option value="0">Disabled</option></select></div>
 <div><label>DOM Storage</label><select id="dom"><option value="1">Enabled</option><option value="0">Disabled</option></select></div>
-<div><label>Internet permission</label><select id="internet"><option value="1">Enabled</option><option value="0">Offline</option></select></div>
+<div><label>Internet</label><select id="internet"><option value="1">Enabled</option><option value="0">Offline</option></select></div>
+<div><label>Keep screen on</label><select id="keep"><option value="0">No</option><option value="1">Yes</option></select></div>
 </div>
-<div class="row" style="margin-top:10px"><button class="primary" onclick="saveProject()">Save Settings</button><button onclick="build()">Build APK</button></div>
+<div class="row" style="margin-top:9px"><button class="primary" onclick="save()">Save Settings</button><button onclick="build()">Build APK</button></div>
 <div id="status" class="status">Ready</div></div>
-<div class="card"><h2>Build History</h2><div id="history"></div></div>
 </section>
 </main>
+
 <script>
-const KEY="html-apk-20";let state,current="index.html",timer;
+"use strict";
+const KEY="html-to-apk-2";let state,current="index.html",timer;
 const starter={
-"index.html":"<!doctype html><html><head><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><link rel=\"stylesheet\" href=\"style.css\"></head><body><h1>My App</h1><p>HTML to APK Builder 2.0</p><button onclick=\"hello()\">Test</button><script src=\"script.js\"><\/script></body></html>",
-"style.css":"body{font-family:Arial;margin:30px;text-align:center}button{padding:12px 20px;border:0;border-radius:9px;background:#5b4bdb;color:white}",
-"script.js":"function hello(){alert('Your HTML app is working!')}"
+"index.html":'<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="style.css"></head><body><h1>My App</h1><p>HTML to APK Builder 2.0</p><script src="script.js"><\/script></body></html>',
+"style.css":"body{font-family:Arial;margin:24px}",
+"script.js":"console.log('working')"
 };
-function fresh(){return{name:"My App",packageName:"com.example.myapp",version:"1.0.0",versionCode:1,orientation:"unspecified",js:1,dom:1,internet:1,files:{...starter},history:[]}}
-function load(){try{let x=JSON.parse(localStorage.getItem(KEY));if(x&&x.files)return x}catch(e){}return fresh()}
+function fresh(){return{name:"My App",pkg:"com.example.myapp",version:"1.0.0",code:1,orientation:"unspecified",js:1,dom:1,internet:1,keep:0,files:{...starter},history:[]}}
+function load(){try{let x=JSON.parse(localStorage.getItem(KEY));if(x&&x.files)return x}catch(e){}let x=fresh();localStorage.setItem(KEY,JSON.stringify(x));return x}
 function store(){localStorage.setItem(KEY,JSON.stringify(state))}
-function page(id){sync();document.querySelectorAll(".screen").forEach(x=>x.classList.remove("active"));document.getElementById(id).classList.add("active");if(id==="preview")preview();if(id==="editor")renderFiles()}
-function sync(){state.files[current]=code.value;state.name=appName.value.trim()||state.name;state.packageName=packageName.value.trim()||state.packageName;state.version=version.value.trim()||state.version;state.versionCode=parseInt(versionCode.value)||1;state.orientation=orientation.value;state.js=+js.value;state.dom=+dom.value;state.internet=+internet.value;store()}
-function fill(){appName.value=state.name;packageName.value=state.packageName;version.value=state.version;versionCode.value=state.versionCode;orientation.value=state.orientation;js.value=state.js;dom.value=state.dom;internet.value=state.internet}
-function render(){projectInfo.innerHTML='<div class="file"><b>'+esc(state.name)+'</b><br><span class="small">'+esc(state.packageName)+' • v'+esc(state.version)+'</span></div>'}
-function renderFiles(){fileList.innerHTML=Object.keys(state.files).map(f=>'<button onclick="openFile('+JSON.stringify(f)+')" style="margin:5px">'+esc(f)+'</button>').join('')}
-function openFile(f){sync();current=f;code.value=state.files[f]||"";renderFiles()}
-function saveProject(){sync();render();toast("Saved")}
+function sync(){state.files[current]=code.value;state.name=appName.value.trim()||state.name;state.pkg=pkg.value.trim()||state.pkg;state.version=version.value.trim()||state.version;state.code=parseInt(versionCode.value)||1;state.orientation=orientation.value;state.js=+js.value;state.dom=+dom.value;state.internet=+internet.value;state.keep=+keep.value;store()}
+function fill(){appName.value=state.name;pkg.value=state.pkg;version.value=state.version;versionCode.value=state.code;orientation.value=state.orientation;js.value=state.js;dom.value=state.dom;internet.value=state.internet;keep.value=state.keep}
+function page(id){sync();document.querySelectorAll(".screen").forEach(x=>x.classList.remove("active"));document.getElementById(id).classList.add("active");if(id==="preview")preview();if(id==="editor")filesRender()}
+function render(){projectBox.innerHTML='<div class="project"><div class="title">'+esc(state.name)+'</div><div class="small">'+esc(state.pkg)+' • v'+esc(state.version)+'</div><div class="row" style="margin-top:7px"><button class="primary" onclick="page(\'editor\')">Open</button><button onclick="renameProject()">Rename</button><button onclick="duplicate()">Duplicate</button><button class="danger" onclick="resetProject()">Delete</button></div></div>'}
+function filesRender(){files.innerHTML=Object.keys(state.files).map(f=>'<button class="'+(f===current?'active':'')+'" onclick="openFile('+JSON.stringify(f)+')">'+esc(f)+'</button>').join("")}
+function openFile(f){sync();current=f;code.value=state.files[f]||"";filesRender()}
+function save(){sync();render();fill();toast("Saved")}
 function newProject(){state=fresh();current="index.html";fill();store();render();openFile(current);page("editor");toast("New project created")}
+function renameProject(){let n=prompt("Project/App name:",state.name);if(n&&n.trim()){state.name=n.trim();save()}}
+function duplicate(){sync();let x=JSON.parse(JSON.stringify(state));x.name=state.name+" Copy";state=x;fill();store();render();toast("Project duplicated")}
+function resetProject(){if(confirm("Delete current project and create a new blank project?")){state=fresh();current="index.html";fill();store();render();openFile(current);toast("Project reset")}}
 function addFile(){let n=prompt("File name:");if(!n)return;if(state.files[n]!=null)return toast("File already exists");state.files[n]="";store();openFile(n)}
-function renameFile(){let n=prompt("New name:",current);if(!n||n===current)return;if(state.files[n]!=null)return toast("File exists");sync();state.files[n]=state.files[current];delete state.files[current];current=n;store();openFile(n)}
+function renameFile(){let n=prompt("New file name:",current);if(!n||n===current)return;if(state.files[n]!=null)return toast("File exists");sync();state.files[n]=state.files[current];delete state.files[current];current=n;store();openFile(n)}
 function deleteFile(){if(Object.keys(state.files).length<2)return toast("Keep at least one file");if(confirm("Delete "+current+"?")){delete state.files[current];current=Object.keys(state.files)[0];store();openFile(current)}}
-function preview(){sync();let h=state.files["index.html"]||"",c=state.files["style.css"]||"",j=state.files["script.js"]||"";h=h.replace(/<link[^>]+href=["']style\.css["'][^>]*>/i,"<style>"+c+"</style>");h=h.replace(/<script[^>]+src=["']script\.js["'][^>]*><\/script>/i,"<script>"+j+"<\/script>");previewFrame.srcdoc=h}
-function build(){sync();status.textContent="Preparing direct APK build…";if(window.Android&&Android.buildApk)Android.buildApk(JSON.stringify(state));else {status.textContent="Build bridge not installed in this UI shell.";toast("Source ready for native build engine.")}}
-function nativePick(){if(Android&&Android.pickHtml)Android.pickHtml()}
-function nativeZip(){if(Android&&Android.pickWebProject)Android.pickWebProject()}
-function nativeImport(name,text){let n=name.toLowerCase();let f=(n.endsWith(".html")||n.endsWith(".htm"))?"index.html":n;state.files[f]=text;current=f;store();openFile(f);page("editor");toast("Imported "+name)}
-function toast(s){status.textContent=s;setTimeout(()=>{status.textContent="Ready"},2500)}
-function esc(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
-code.addEventListener("input",()=>{clearTimeout(timer);timer=setTimeout(()=>{sync()},500)});
+function preview(){sync();let h=state.files["index.html"]||"",c=state.files["style.css"]||"",j=state.files["script.js"]||"";h=h.replace(/<link[^>]+href=["']style\.css["'][^>]*>/i,"<style>"+c+"</style>");h=h.replace(/<script[^>]+src=["']script\.js["'][^>]*><\/script>/i,"<script>"+j+"<\/script>");frame.srcdoc=h}
+function importHtml(){if(Android&&Android.openHtml)Android.openHtml();else toast("Import bridge unavailable")}
+function importFile(){if(Android&&Android.openAnyFile)Android.openAnyFile();else toast("Import bridge unavailable")}
+function nativeImport(name,text){let n=name.toLowerCase(),f=(n.endsWith(".html")||n.endsWith(".htm"))?"index.html":n.endsWith(".css")?"style.css":n.endsWith(".js")?"script.js":name;state.files[f]=text;store();openFile(f);page("editor");toast("Imported "+name)}
+function build(){sync();status.textContent="Project prepared for direct APK compilation.";if(Android&&Android.buildApk)Android.buildApk(JSON.stringify(state));else toast("Direct compiler bridge unavailable")}
+function toast(x){status.textContent=x;setTimeout(()=>status.textContent="Ready",2500)}
+function esc(s){return String(s).replace(/[&<>"]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[m]))}
+code.addEventListener("input",()=>{clearTimeout(timer);timer=setTimeout(sync,500)});
+window.nativeImport=nativeImport;
 state=load();fill();render();openFile(current);
-</script></body></html>
+</script>
+</body></html>
